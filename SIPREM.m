@@ -4128,31 +4128,77 @@ function code = classToCode(cat_vec)
     end
 end
 function trap = crispSaatyToTrap(val)
-    % Escala trapezoidal de Mou (2004)
+
+    % Escala trapezoidal adotada
+    scale = [
+        1 1.0 1.0 1.0 1.0;
+        2 1.0 1.5 2.5 3.0;
+        3 2.0 2.5 3.5 4.0;
+        4 3.0 3.5 4.5 5.0;
+        5 4.0 4.5 5.5 6.0;
+        6 5.0 5.5 6.5 7.0;
+        7 6.0 6.5 7.5 8.0;
+        8 7.0 7.5 8.5 9.0;
+        9 8.0 8.5 9.0 9.0
+    ];
+
+    if ~isscalar(val) || ~isfinite(val) || val <= 0
+        error('Valor Saaty deve ser positivo e finito.');
+    end
+
+    % Igualdade
     if abs(val - 1) < 1e-12
-        trap = [1, 1, 1, 1];
+        trap = [1 1 1 1];
         return;
     end
 
-    if val > 1
-        v = round(val);
+    % ---------------------------------------------------------
+    % Valores recíprocos
+    %
+    % Não interpolar diretamente x < 1.
+    % Fuzzifica 1/x e toma o inverso fuzzy exato.
+    % ---------------------------------------------------------
+    if val < 1
 
-        if ~ismember(v, 1:9)
-            error('Valor da escala Saaty fora do intervalo 1..9: %.4f', val);
-        end
+        directTrap = crispSaatyToTrap(1/val);
 
-        if v == 9
-            trap = [8, 8.5, 9, 9];
-        elseif v == 1
-            trap = [1, 1, 1, 1];
-        else
-            trap = [v-1, v-0.5, v+0.5, v+1];
-        end
-    else
-        invv = 1 / val;
-        trap_inv = crispSaatyToTrap(invv);
-        trap = [1/trap_inv(4), 1/trap_inv(3), 1/trap_inv(2), 1/trap_inv(1)];
+        trap = [
+            1/directTrap(4), ...
+            1/directTrap(3), ...
+            1/directTrap(2), ...
+            1/directTrap(1)
+        ];
+
+        return;
     end
+
+    % Limite superior da escala
+    if val > 9
+        error('Valor da escala Saaty acima de 9: %.6f', val);
+    end
+
+    % Valor exatamente presente na escala
+    if abs(val - round(val)) < 1e-12
+
+        k = round(val);
+        trap = scale(k,2:5);
+        return;
+    end
+
+    % ---------------------------------------------------------
+    % Interpolação linear para valores intermediários > 1
+    % ---------------------------------------------------------
+    lower = floor(val);
+    upper = ceil(val);
+
+    lambda = ...
+        (val - lower) / ...
+        (upper - lower);
+
+    trap = ...
+        (1-lambda)*scale(lower,2:5) + ...
+        lambda*scale(upper,2:5);
+
 end
 
 function w = fahpBuckleyTrap(A_group)
