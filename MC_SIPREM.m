@@ -9,7 +9,7 @@ if ~exist(pasta_figuras, 'dir')
 end
 
 %% CONFIGURAÇÕES
-N_mc = 100; % Elevado para 1000 iterações conforme validação estatística
+N_mc = 2000; % Elevado para 1000 iterações conforme validação estatística
 rng(42);
 
 input_file = 'dados_requisitos_lista.xlsx';
