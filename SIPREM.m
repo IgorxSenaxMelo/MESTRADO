@@ -1,12 +1,12 @@
 % =========================================================
-% fuzzy_promethee_s2_geldermann_comparativo.m
+% fuzzy_promethee_SIPREM_geldermann_comparativo.m
 % graficos mais importantes: 1 4 5 8 14 e 16
 % CENÁRIOS:
 %   S1 = pesos fuzzy fixos
 %        + avaliações médias fuzzy dos especialistas
 %        + Fuzzy PROMETHEE II
 %
-%   S2 = FAHP trapezoidal individual por especialista
+%   SIPREM = FAHP trapezoidal individual por especialista
 %        + Fuzzy PROMETHEE II individual
 %        + agregação posterior dos fluxos líquidos fuzzy
 %
@@ -119,8 +119,8 @@ w_s1_fuzzy = [
     0.0552    0.0629    0.0834    0.0983
 ];
 
-% S2 = pesos dos especialistas do estudo de caso
-[w_fuzzy_group, w_group_defuzz, info_s2]=get_ws1_fuzzy_from_fahp_express('F_AHP_A.xlsx');
+% SIPREM = pesos dos especialistas do estudo de caso
+[w_fuzzy_group, w_group_defuzz, info_SIPREM]=get_ws1_fuzzy_from_fahp_express('F_AHP_A.xlsx');
 
 disp('====================================================');
 disp('Pesos fuzzy do grupo (FAHP trapezoidal) - calculados automaticamente');
@@ -324,10 +324,10 @@ for i = 1:nReq
 end
 
 %% ---------------------------------------------------------
-% 7. S2 - PROMETHEE individual por especialista + agregação posterior
+% 7. SIPREM - PROMETHEE individual por especialista + agregação posterior
 % ---------------------------------------------------------
 rank_matrix = zeros(nReq, nExperts + 1);
-col_names = [all_sheets(:); {'Grupo S2'}];
+col_names = [all_sheets(:); {'Grupo SIPREM'}];
 
 phi_net_experts       = zeros(nReq, nExperts);
 Phi_plus_experts      = zeros(nReq, nExperts);
@@ -361,7 +361,7 @@ end
     end
 
     % pesos fuzzy individuais vindos da função FAHP
-w_fuzzy_e = squeeze(info_s2.w_fuzzy_individual(:,:,e));
+w_fuzzy_e = squeeze(info_SIPREM.w_fuzzy_individual(:,:,e));
 
     % fuzzy PROMETHEE II individual
     [phi_plus_e, phi_minus_e, phi_net_e, phi_plus_fz_e, phi_minus_fz_e, phi_net_fz_e] = ...
@@ -431,28 +431,28 @@ impacto_min_val = min(impacto_ind, [], 2);
 
 alerta_div = (impacto_max_val - impacto_min_val) >= 3;
 
-% classificação S2 (grupo) via K-means
-cat = classify_requirements_kmeans(phi_net, candidatos_key);
-% Auditoria dos grupos K-means no S2
-[idx_km_s2, C_s2, group_names_s2] = get_kmeans_groups(phi_net, candidatos_key);
+% classificação SIPREM (grupo) via K-means
+[cat, idx_km_SIPREM, C_SIPREM, group_names_SIPREM] = ...
+    classify_requirements_kmeans(phi_net, candidatos_key);
 
-T_kmeans_s2 = table((1:numel(C_s2))', C_s2(:), group_names_s2(:), ...
+
+T_kmeans_SIPREM = table((1:numel(C_SIPREM))', C_SIPREM(:), group_names_SIPREM(:), ...
     'VariableNames', {'Cluster','Centroide','Grupo'});
 
 disp(' ');
-disp('--- CENTRÓIDES K-MEANS (S2) ---');
-disp(T_kmeans_s2);
+disp('--- CENTRÓIDES K-MEANS (SIPREM) ---');
+disp(T_kmeans_SIPREM);
 
-writetable(T_kmeans_s2, 'KMeans_Clusters_S2.xlsx');
+writetable(T_kmeans_SIPREM, 'KMeans_Clusters_SIPREM.xlsx');
 
 %% ---------------------------------------------------------
-% 9. TABELA FINAL E EXPORTAÇÃO - S2
+% 9. TABELA FINAL E EXPORTAÇÃO - SIPREM
 % Aba 1: Consolidado
 % Aba 2: Dados_Brutos
 % ---------------------------------------------------------
 
 arquivo_resultado = ...
-    'Resultado_S2_FAHP_FuzzyPromethee_Geldermann.xlsx';
+    'Resultado_SIPREM_FAHP_FuzzyPromethee_Geldermann.xlsx';
 
 %% =========================================================
 % TABELA COMPLETA — DADOS BRUTOS
@@ -531,7 +531,7 @@ T_consolidado.Properties.VariableNames = { ...
 % EXIBIÇÃO NO COMMAND WINDOW
 % =========================================================
 
-disp('Top 10 requisitos - Cenário S2:');
+disp('Top 10 requisitos - Cenário SIPREM:');
 disp(head(T_consolidado, min(10,height(T_consolidado))));
 
 %% =========================================================
@@ -585,18 +585,18 @@ T_audit = array2table(F_flat, 'VariableNames', col_names_F, 'RowNames', req_labe
 writetable(T_audit, 'Auditoria_Entrada_Fuzzy.xlsx', 'WriteRowNames', true);
 
 %% ---------------------------------------------------------
-% 10. TABELA DE COMPARAÇÃO S1 VS S2
+% 10. TABELA DE COMPARAÇÃO S1 VS SIPREM
 % ---------------------------------------------------------
 rank_s1 = nReq + 1 - tiedrank(phi_liq_base(:));
-rank_s2 = nReq + 1 - tiedrank(phi_net(:));
-delta_rank = rank_s1 - rank_s2;
+rank_SIPREM = nReq + 1 - tiedrank(phi_net(:));
+delta_rank = rank_s1 - rank_SIPREM;
 
 T_compare = table(req_labels(:), phi_liq_base(:), phi_net(:), ...
-    rank_s1, rank_s2, delta_rank, ...
-    'VariableNames', {'Req','PhiNet_S1','PhiNet_S2','Rank_S1','Rank_S2','DeltaRank'});
+    rank_s1, rank_SIPREM, delta_rank, ...
+    'VariableNames', {'Req','PhiNet_S1','PhiNet_SIPREM','Rank_S1','Rank_SIPREM','DeltaRank'});
 
 disp(T_compare);
-writetable(T_compare, 'Comparacao_S1_S2.xlsx');
+writetable(T_compare, 'Comparacao_S1_SIPREM.xlsx');
 
 %% =========================================================
 % CORRELAÇÃO DOS FLUXOS LÍQUIDOS
@@ -607,7 +607,7 @@ phi_all = [phi_net_experts,...
            phi_liq_base(:)];
 
 labels_phi = [all_sheets(:); ...
-              {'GrupoS2'}; ...
+              {'GrupoSIPREM'}; ...
               {'S1'}];
 
 rho_phi_spear = corr(phi_all,...
@@ -634,8 +634,8 @@ disp(array2table(rho_phi_pear,...
 % S1: usa a mesma lógica de KEY do grupo
 cat_s1 = classify_requirements_kmeans(phi_liq_base, candidatos_key);
 
-% S2: já foi calculada acima como "cat"
-cat_s2 = cat;
+% SIPREM: já foi calculada acima como "cat"
+cat_SIPREM = cat;
 
 % especialistas individuais
 cat_exp = strings(nReq, nExperts);
@@ -658,11 +658,11 @@ end
 %% =========================================================
 
 % Organização das fontes:
-% E1, E2, ..., En, S1 e S2
+% E1, E2, ..., En, S1 e SIPREM
 classes_kappa = [ ...
     cat_exp, ...
     cat_s1(:), ...
-    cat_s2(:)];
+    cat_SIPREM(:)];
 
 nFontesKappa = size(classes_kappa,2);
 
@@ -674,7 +674,7 @@ for e = 1:nExperts
 end
 
 labels_kappa(nExperts+1) = "S1";
-labels_kappa(nExperts+2) = "S2";
+labels_kappa(nExperts+2) = "SIPREM";
 
 %% ---------------------------------------------------------
 % Conversão das categorias em códigos ordinais
@@ -747,7 +747,7 @@ writetable( ...
 fig_kappa = figure( ...
     'Color','w', ...
     'Position',[130 80 900 760], ...
-    'Visible','on', ...
+    'Visible','off', ...
     'Name', ...
     'Concordância das classificações - Weighted Cohen Kappa', ...
     'NumberTitle','off');
@@ -766,7 +766,7 @@ cb = colorbar;
 cb.Label.String = 'Weighted Cohen''s Kappa';
 
 title( ...
-    {'Concordância das classificações entre especialistas, S1 e S2', ...
+    {'Concordância das classificações entre especialistas, S1 e SIPREM', ...
      'Weighted Cohen''s Kappa com ponderação quadrática'}, ...
     'FontSize',13, ...
     'FontWeight','bold');
@@ -836,7 +836,7 @@ drawnow;
 T_final = table(req_labels(:), ...
                 IDs, ...
                 phi_net(:), ...
-                rank_s2(:), ...
+                rank_SIPREM(:), ...
                 cat(:), ...
                 alerta_div(:), ...
     'VariableNames',{'Req','ID','PhiNet','Rank','Categoria','Alerta_Divergencia'});
@@ -865,11 +865,11 @@ for e = 1:nExperts
 
 end
 
-vars{end+1} = rank_s2(:);
-vars{end+1} = cat_s2(:);
+vars{end+1} = rank_SIPREM(:);
+vars{end+1} = cat_SIPREM(:);
 
-varNames{end+1} = 'Rank_S2';
-varNames{end+1} = 'Classe_S2';
+varNames{end+1} = 'Rank_SIPREM';
+varNames{end+1} = 'Classe_SIPREM';
 
 T_rank_all = table(vars{:},...
                    'VariableNames',varNames);
@@ -894,7 +894,7 @@ disp(T_rank_all)
 % 6. Boxplot das classificações de cada requisito
 %
 % Comparação sempre realizada em relação ao resultado
-% consolidado do cenário S2.
+% consolidado do cenário SIPREM.
 %% =========================================================
 
 fprintf('\n');
@@ -923,7 +923,7 @@ end
 %% =========================================================
 
 %% ---------------------------------------------------------
-% 2. DIFERENÇA ENTRE O RANKING INDIVIDUAL E O RANKING S2
+% 2. DIFERENÇA ENTRE O RANKING INDIVIDUAL E O RANKING SIPREM
 %
 % Delta com sinal:
 %
@@ -944,7 +944,7 @@ abs_delta_rank_exp = zeros(nReq,nExperts);
 for e = 1:nExperts
 
     delta_rank_exp(:,e) = ...
-        rank_matrix(:,e) - rank_s2(:);
+        rank_matrix(:,e) - rank_SIPREM(:);
 
     abs_delta_rank_exp(:,e) = ...
         abs(delta_rank_exp(:,e));
@@ -987,7 +987,7 @@ for e = 1:nExperts
         'FaceAlpha',0.80);
 
     title( ...
-        sprintf('%s versus Grupo S2',nomes_especialistas(e)), ...
+        sprintf('%s versus Grupo SIPREM',nomes_especialistas(e)), ...
         'Interpreter','none', ...
         'FontWeight','bold');
 
@@ -1098,8 +1098,8 @@ disp(T_resumo_rank);
 % 5. TABELA DETALHADA DAS DIFERENÇAS DE RANKING
 %% ---------------------------------------------------------
 
-vars_rank_detalhe = {req_labels(:), rank_s2(:)};
-nomes_rank_detalhe = {'Requisito','Rank_S2'};
+vars_rank_detalhe = {req_labels(:), rank_SIPREM(:)};
+nomes_rank_detalhe = {'Requisito','Rank_SIPREM'};
 
 for e = 1:nExperts
 
@@ -1117,13 +1117,13 @@ T_detalhe_rank = table( ...
     vars_rank_detalhe{:}, ...
     'VariableNames',nomes_rank_detalhe);
 
-T_detalhe_rank = sortrows(T_detalhe_rank,'Rank_S2');
+T_detalhe_rank = sortrows(T_detalhe_rank,'Rank_SIPREM');
 
 %% ---------------------------------------------------------
 % 6. BOXPLOT DAS POSIÇÕES DE CADA REQUISITO
 %
 % Cada caixa contém as posições atribuídas pelos especialistas.
-% O losango representa a posição consolidada no Grupo S2.
+% O losango representa a posição consolidada no Grupo SIPREM.
 %% ---------------------------------------------------------
 
 fig_box_rank = figure( ...
@@ -1143,14 +1143,14 @@ boxplot( ...
 
 hold on;
 
-% Posição consolidada do requisito no ranking S2
+% Posição consolidada do requisito no ranking SIPREM
 scatter( ...
     1:nReq, ...
-    rank_s2(:), ...
+    rank_SIPREM(:), ...
     60, ...
     'd', ...
     'filled', ...
-    'DisplayName','Ranking consolidado S2');
+    'DisplayName','Ranking consolidado SIPREM');
 
 % Posição 1 deve aparecer no topo
 set(gca,'YDir','reverse');
@@ -1163,7 +1163,7 @@ ylabel('Posição no ranking');
 
 title( ...
     {'Dispersão das posições atribuídas aos requisitos', ...
-     'Caixas: especialistas individuais | Losango: ranking consolidado S2'}, ...
+     'Caixas: especialistas individuais | Losango: ranking consolidado SIPREM'}, ...
     'FontSize',13, ...
     'FontWeight','bold');
 
@@ -1172,7 +1172,7 @@ grid on;
 box on;
 
 legend( ...
-    'Ranking consolidado S2', ...
+    'Ranking consolidado SIPREM', ...
     'Location','eastoutside');
 
 hold off;
@@ -1216,7 +1216,7 @@ end
 
 T_controversia_rank = table( ...
     req_labels(:), ...
-    rank_s2(:), ...
+    rank_SIPREM(:), ...
     rank_req_media, ...
     rank_req_mediana, ...
     rank_req_std, ...
@@ -1226,7 +1226,7 @@ T_controversia_rank = table( ...
     rank_req_amplitude, ...
     'VariableNames',{ ...
         'Requisito', ...
-        'Rank_S2', ...
+        'Rank_SIPREM', ...
         'Media_Posicao', ...
         'Mediana_Posicao', ...
         'DesvioPadrao_Posicao', ...
@@ -1269,7 +1269,7 @@ for e = 1:nExperts
 
 end
 
-classe_codigo_s2 = classToCode(cat_s2(:));
+classe_codigo_SIPREM = classToCode(cat_SIPREM(:));
 
 %% ---------------------------------------------------------
 % 9. DIFERENÇAS DE CLASSIFICAÇÃO
@@ -1293,7 +1293,7 @@ abs_delta_classe_exp = zeros(nReq,nExperts);
 for e = 1:nExperts
 
     delta_classe_exp(:,e) = ...
-        classe_codigo_exp(:,e)-classe_codigo_s2;
+        classe_codigo_exp(:,e)-classe_codigo_SIPREM;
 
     abs_delta_classe_exp(:,e) = ...
         abs(delta_classe_exp(:,e));
@@ -1327,7 +1327,7 @@ for e = 1:nExperts
         'FaceAlpha',0.80);
 
     title( ...
-        sprintf('%s versus Grupo S2',nomes_especialistas(e)), ...
+        sprintf('%s versus Grupo SIPREM',nomes_especialistas(e)), ...
         'Interpreter','none', ...
         'FontWeight','bold');
 
@@ -1435,13 +1435,13 @@ disp(T_resumo_classe);
 
 vars_classe_detalhe = { ...
     req_labels(:), ...
-    cat_s2(:), ...
-    classe_codigo_s2};
+    cat_SIPREM(:), ...
+    classe_codigo_SIPREM};
 
 nomes_classe_detalhe = { ...
     'Requisito', ...
-    'Classe_S2', ...
-    'CodigoClasse_S2'};
+    'Classe_SIPREM', ...
+    'CodigoClasse_SIPREM'};
 
 for e = 1:nExperts
 
@@ -1471,7 +1471,7 @@ T_detalhe_classe = table( ...
 % 3 = G2
 % 4 = G3
 %
-% O losango mostra a classificação consolidada S2.
+% O losango mostra a classificação consolidada SIPREM.
 %% ---------------------------------------------------------
 
 fig_box_classe = figure( ...
@@ -1490,11 +1490,11 @@ hold on;
 
 scatter( ...
     1:nReq, ...
-    classe_codigo_s2, ...
+    classe_codigo_SIPREM, ...
     60, ...
     'd', ...
     'filled', ...
-    'DisplayName','Classificação consolidada S2');
+    'DisplayName','Classificação consolidada SIPREM');
 
 % Key aparece no topo e G3 na parte inferior
 set(gca,'YDir','reverse');
@@ -1508,7 +1508,7 @@ ylabel('Classificação');
 
 title( ...
     {'Dispersão das classificações atribuídas aos requisitos', ...
-     'Caixas: especialistas individuais | Losango: classificação consolidada S2'}, ...
+     'Caixas: especialistas individuais | Losango: classificação consolidada SIPREM'}, ...
     'FontSize',13, ...
     'FontWeight','bold');
 
@@ -1517,7 +1517,7 @@ grid on;
 box on;
 
 legend( ...
-    'Classificação consolidada S2', ...
+    'Classificação consolidada SIPREM', ...
     'Location','eastoutside');
 
 hold off;
@@ -1552,21 +1552,21 @@ for i = 1:nReq
 
 end
 
-% Percentual de especialistas que concordam exatamente com S2
+% Percentual de especialistas que concordam exatamente com SIPREM
 percentual_acordo_classe = zeros(nReq,1);
 
 for i = 1:nReq
 
     percentual_acordo_classe(i) = ...
         100*mean( ...
-        classe_codigo_exp(i,:) == classe_codigo_s2(i));
+        classe_codigo_exp(i,:) == classe_codigo_SIPREM(i));
 
 end
 
 T_controversia_classe = table( ...
     req_labels(:), ...
-    cat_s2(:), ...
-    classe_codigo_s2, ...
+    cat_SIPREM(:), ...
+    classe_codigo_SIPREM, ...
     classe_req_media, ...
     classe_req_mediana, ...
     classe_req_std, ...
@@ -1577,8 +1577,8 @@ T_controversia_classe = table( ...
     percentual_acordo_classe, ...
     'VariableNames',{ ...
         'Requisito', ...
-        'Classe_S2', ...
-        'CodigoClasse_S2', ...
+        'Classe_SIPREM', ...
+        'CodigoClasse_SIPREM', ...
         'Media_CodigoClasse', ...
         'Mediana_CodigoClasse', ...
         'DesvioPadrao_Classe', ...
@@ -1586,13 +1586,13 @@ T_controversia_classe = table( ...
         'Melhor_Classe_Codigo', ...
         'Pior_Classe_Codigo', ...
         'Amplitude_Classe', ...
-        'Percentual_AcordoComS2'});
+        'Percentual_AcordoComSIPREM'});
 
 T_controversia_classe = sortrows( ...
     T_controversia_classe, ...
     {'DesvioPadrao_Classe', ...
      'Amplitude_Classe', ...
-     'Percentual_AcordoComS2'}, ...
+     'Percentual_AcordoComSIPREM'}, ...
     {'descend','descend','ascend'});
 
 disp(' ');
@@ -1683,17 +1683,17 @@ T_pesos = table(crit_names(:), ...
     w_group_defuzz(:), ...
     'VariableNames', {'Criterio', ...
                       'wS1_a','wS1_b','wS1_c','wS1_d', ...
-                      'wS2_a','wS2_b','wS2_c','wS2_d', ...
-                      'wS2_defuzz'});
+                      'wSIPREM_a','wSIPREM_b','wSIPREM_c','wSIPREM_d', ...
+                      'wSIPREM_defuzz'});
 disp(T_pesos);
 
-rho_s1_s2 = corr(rank_s1, rank_s2, 'Type', 'Spearman');
-fprintf('\nSpearman entre ranking S1 e S2 = %.4f\n', rho_s1_s2);
+rho_s1_SIPREM = corr(rank_s1, rank_SIPREM, 'Type', 'Spearman');
+fprintf('\nSpearman entre ranking S1 e SIPREM = %.4f\n', rho_s1_SIPREM);
 
 rho_expert_group = zeros(nExperts,1);
 for e = 1:nExperts
     rho_expert_group(e) = corr(rank_matrix(:,e), rank_matrix(:,end), 'Type', 'Spearman');
-    fprintf('Spearman entre %s e Grupo S2 = %.4f\n', all_sheets{e}, rho_expert_group(e));
+    fprintf('Spearman entre %s e Grupo SIPREM = %.4f\n', all_sheets{e}, rho_expert_group(e));
 end
 
 rho_experts = nan(nExperts, nExperts);
@@ -1709,25 +1709,25 @@ disp(array2table(rho_experts, 'VariableNames', matlab.lang.makeValidName(all_she
     'RowNames', matlab.lang.makeValidName(all_sheets)));
 
 [~, idx_s1] = sort(phi_liq_base, 'descend');
-[~, idx_s2] = sort(phi_net, 'descend');
+[~, idx_SIPREM] = sort(phi_net, 'descend');
 
 Top10_S1 = table(req_labels(idx_s1(1:min(10,nReq)))', phi_liq_base(idx_s1(1:min(10,nReq))), rank_s1(idx_s1(1:min(10,nReq))), ...
     'VariableNames', {'Req','PhiNet_S1','Rank_S1'});
 
-Top10_S2 = table(req_labels(idx_s2(1:min(10,nReq)))', phi_net(idx_s2(1:min(10,nReq))), rank_s2(idx_s2(1:min(10,nReq))), ...
-    'VariableNames', {'Req','PhiNet_S2','Rank_S2'});
+Top10_SIPREM = table(req_labels(idx_SIPREM(1:min(10,nReq)))', phi_net(idx_SIPREM(1:min(10,nReq))), rank_SIPREM(idx_SIPREM(1:min(10,nReq))), ...
+    'VariableNames', {'Req','PhiNet_SIPREM','Rank_SIPREM'});
 
 disp(' ');
 disp('--- TOP 10 S1 ---');
 disp(Top10_S1);
 
 disp(' ');
-disp('--- TOP 10 S2 ---');
-disp(Top10_S2);
+disp('--- TOP 10 SIPREM ---');
+disp(Top10_SIPREM);
 
 [~, idx_delta] = sort(abs(delta_rank), 'descend');
-T_delta = table(req_labels(:), rank_s1, rank_s2, delta_rank, abs(delta_rank), ...
-    'VariableNames', {'Req','Rank_S1','Rank_S2','Delta','AbsDelta'});
+T_delta = table(req_labels(:), rank_s1, rank_SIPREM, delta_rank, abs(delta_rank), ...
+    'VariableNames', {'Req','Rank_S1','Rank_SIPREM','Delta','AbsDelta'});
 T_delta = T_delta(idx_delta,:);
 
 disp(' ');
@@ -1741,11 +1741,11 @@ disp(head(T_delta, min(10,height(T_delta))));
 T_controv = table(req_labels(:), IDs, ...
     impacto_std, impacto_range, ...
     disp_std_media_req, disp_range_media_req, ...
-    phi_net(:), rank_s2(:), cat(:), ...
+    phi_net(:), rank_SIPREM(:), cat(:), ...
     'VariableNames', {'Req','ID', ...
                       'Impacto_STD','Impacto_Range', ...
                       'DispMedia_STD','DispMedia_Range', ...
-                      'PhiNet','Rank_S2','Categoria'});
+                      'PhiNet','Rank_SIPREM','Categoria'});
 
 % Ordenação principal: maior dispersão global média
 T_controv = sortrows(T_controv, {'DispMedia_STD','Impacto_Range'}, {'descend','descend'});
@@ -1891,7 +1891,7 @@ colormap(flipud(parula));
 colorbar;
 caxis([1 nReq]);
 
-title('Heatmap das posições no ranking: especialistas vs grupo S2', ...
+title('Heatmap das posições no ranking: especialistas vs grupo SIPREM', ...
     'FontSize', 13, 'FontWeight', 'bold');
 
 xticks(1:(nExperts+1));
@@ -1938,29 +1938,30 @@ end
 set(gca, 'XTick', x, 'XTickLabel', crit_names, 'FontSize', 11);
 xtickangle(20);
 ylabel('Peso');
-title('Pesos fuzzy dos critérios (referência FAHP de grupo)', 'FontSize', 13, 'FontWeight', 'bold');
+title('Pesos fuzzy dos critérios obtidos pelo FAHP-Express', ...
+    'FontSize', 13, 'FontWeight', 'bold');
 grid on;
 box on;
 hold off;
 
 %% =========================================================
-% 14. FIGURA 3 - COMPARAÇÃO DO NET FLOW ENTRE S1 E S2
+% 14. FIGURA 3 - COMPARAÇÃO DO NET FLOW ENTRE S1 E SIPREM
 %% =========================================================
 figure('Color','w','Position',[120 120 1150 520]);
 phi_compare = [phi_liq_base(:), phi_net(:)];
 bar(phi_compare, 'grouped');
 
-title('Comparação do fluxo líquido entre S1 e S2', 'FontSize', 13, 'FontWeight', 'bold');
+title('Comparação do fluxo líquido entre S1 e SIPREM', 'FontSize', 13, 'FontWeight', 'bold');
 xlabel('Requisitos');
 ylabel('\phi_{net}');
-legend({'S1 - FAHP institucional', 'S2 - agregação posterior'}, 'Location', 'best');
+legend({'S1 - FAHP institucional', 'SIPREM - agregação posterior'}, 'Location', 'best');
 set(gca, 'XTick', 1:nReq, 'XTickLabel', req_labels);
 xtickangle(90);
 grid on;
 box on;
 
 %% =========================================================
-% 15. FIGURA 4 - SCATTER S1 VS S2
+% 15. FIGURA 4 - SCATTER S1 VS SIPREM
 %% =========================================================
 figure('Color','w','Position',[130 130 700 620]);
 scatter(phi_liq_base, phi_net, 70, 'filled');
@@ -1976,15 +1977,15 @@ for i = 1:nReq
 end
 
 xlabel('\phi_{net} - S1');
-ylabel('\phi_{net} - S2');
-title('Comparação entre os fluxos líquidos de S1 e S2', 'FontSize', 13, 'FontWeight', 'bold');
+ylabel('\phi_{net} - SIPREM');
+title('Comparação entre os fluxos líquidos de S1 e SIPREM', 'FontSize', 13, 'FontWeight', 'bold');
 grid on;
 box on;
 axis equal;
 hold off;
 
-rho_s1s2 = corr(phi_liq_base(:), phi_net(:), 'Type', 'Spearman');
-fprintf('Spearman entre phi_net de S1 e S2 = %.4f\n', rho_s1s2);
+rho_s1SIPREM = corr(phi_liq_base(:), phi_net(:), 'Type', 'Spearman');
+fprintf('Spearman entre phi_net de S1 e SIPREM = %.4f\n', rho_s1SIPREM);
 
 % %% =========================================================
 % % 16. FIGURA 5 - SLOPE GRAPH
@@ -2024,7 +2025,7 @@ fprintf('Spearman entre phi_net de S1 e S2 = %.4f\n', rho_s1s2);
 % end
 % 
 % rho_val = corr(rank_matrix(:,end), rank_matrix(:,1), 'type', 'Spearman');
-% xlabel_text = sprintf('Exemplo de correlação de Spearman (Grupo S2 vs %s): \\rho = %.4f', ...
+% xlabel_text = sprintf('Exemplo de correlação de Spearman (Grupo SIPREM vs %s): \\rho = %.4f', ...
 %     all_sheets{1}, rho_val);
 % 
 % text(mean(x_coords), nReq + 1.2, xlabel_text, ...
@@ -2033,7 +2034,7 @@ fprintf('Spearman entre phi_net de S1 e S2 = %.4f\n', rho_s1s2);
 %     'FontAngle', 'italic');
 % 
 % set(gca, 'YDir', 'reverse', 'XColor', 'none', 'YColor', 'none', 'Box', 'off');
-% title('Sensibilidade de ranking: especialistas individuais vs grupo S2', 'FontSize', 14, 'FontWeight', 'bold');
+% title('Sensibilidade de ranking: especialistas individuais vs grupo SIPREM', 'FontSize', 14, 'FontWeight', 'bold');
 % ylim([0, nReq + 1.5]);
 % xlim([0.2, nExperts + 1.8]);
 % hold off;
@@ -2048,26 +2049,26 @@ T_delta_plot = T_delta(1:topN,:);
 
 figure('Color','w','Position',[120 120 950 500]);
 bar(categorical(T_delta_plot.Req), T_delta_plot.AbsDelta);
-title('Requisitos com maior variação de posição entre S1 e S2', 'FontSize', 13, 'FontWeight', 'bold');
+title('Requisitos com maior variação de posição entre S1 e SIPREM', 'FontSize', 13, 'FontWeight', 'bold');
 xlabel('Requisitos');
 ylabel('|Δ rank|');
 grid on;
 
 box on;
 %% =========================================================
-% HEATMAPS DE CONCORDÂNCIA ENTRE ESPECIALISTAS, S1 E S2
+% HEATMAPS DE CONCORDÂNCIA ENTRE ESPECIALISTAS, S1 E SIPREM
 %
 % Medidas:
 %   1) Spearman Footrule normalizada
 %   2) Kendall Tau-b
 %
 % Fontes comparadas:
-%   E1, E2, ..., En, S1 e S2
+%   E1, E2, ..., En, S1 e SIPREM
 %% =========================================================
 
 fprintf('\n');
 fprintf('============================================================\n');
-fprintf('CONCORDÂNCIA ENTRE ESPECIALISTAS, S1 E S2\n');
+fprintf('CONCORDÂNCIA ENTRE ESPECIALISTAS E SIPREM\n');
 fprintf('============================================================\n');
 
 %% ---------------------------------------------------------
@@ -2075,25 +2076,22 @@ fprintf('============================================================\n');
 %% ---------------------------------------------------------
 
 % rank_matrix(:,1:nExperts) = rankings individuais
-% rank_s1                   = ranking do cenário S1
-% rank_s2                   = ranking coletivo do cenário S2
+
+% rank_SIPREM                   = ranking coletivo do cenário SIPREM
 
 rankings_concordancia = [ ...
     rank_matrix(:,1:nExperts), ...
-    rank_s1(:), ...
-    rank_s2(:)];
+    rank_SIPREM(:)];
 
 nFontes = size(rankings_concordancia,2);
 
-% Nomes simplificados para apresentação
 labels_concordancia = strings(nFontes,1);
 
 for e = 1:nExperts
     labels_concordancia(e) = sprintf('E%d',e);
 end
 
-labels_concordancia(nExperts+1) = "S1";
-labels_concordancia(nExperts+2) = "S2";
+labels_concordancia(nExperts+1) = "SIPREM";
 
 % Nomes válidos para as colunas das tabelas MATLAB
 nomes_validos = matlab.lang.makeValidName( ...
@@ -2184,9 +2182,9 @@ disp(T_distancia_footrule);
 fig_footrule = figure( ...
     'Color','w', ...
     'Position',[100 80 900 760], ...
-    'Visible','on', ...
+    'Visible','off', ...
     'Name', ...
-    'Concordância entre especialistas S1 e S2 - Spearman Footrule normalizada', ...
+    'Concordância entre especialistas e S2 - Spearman Footrule normalizada', ...
     'NumberTitle','off');
 
 % O heatmap precisa ser criado depois da figura definitiva
@@ -2203,7 +2201,7 @@ cb.Label.String = 'Concordância Footrule normalizada';
 caxis([0 1]);
 
 title( ...
-    {'Concordância entre especialistas, S1 e S2', ...
+    {'Concordância entre especialistas e SIPREM', ...
      'Spearman Footrule normalizada'}, ...
     'FontSize',13, ...
     'FontWeight','bold');
@@ -2260,28 +2258,22 @@ drawnow;
 %
 % - concordância média com os demais especialistas;
 % - concordância com S1;
-% - concordância com S2.
+% - concordância com SIPREM.
 %% ---------------------------------------------------------
 
 foot_media_pares = zeros(nExperts,1);
-foot_com_s1      = zeros(nExperts,1);
-foot_com_s2      = zeros(nExperts,1);
-
+foot_com_SIPREM      = zeros(nExperts,1);
 
 for e = 1:nExperts
 
-    % Índices dos outros especialistas
     outros = setdiff(1:nExperts,e);
 
-    % Footrule
     foot_media_pares(e) = mean( ...
         IC_footrule(e,outros), ...
         'omitnan');
 
-    foot_com_s1(e) = IC_footrule(e,nExperts+1);
-    foot_com_s2(e) = IC_footrule(e,nExperts+2);
+    foot_com_SIPREM(e) = IC_footrule(e,nExperts+1);
 
-   
 end
 
 Especialista_heatmap = strings(nExperts,1);
@@ -2293,13 +2285,11 @@ end
 T_resumo_concordancia = table( ...
     Especialista_heatmap, ...
     foot_media_pares, ...
-    foot_com_s1, ...
-    foot_com_s2, ...
+    foot_com_SIPREM, ...
     'VariableNames',{ ...
         'Especialista', ...
         'Footrule_Media_Com_Pares', ...
-        'Footrule_Com_S1', ...
-        'Footrule_Com_S2'});
+        'Footrule_Com_SIPREM'});
 
 disp(' ');
 disp('--- RESUMO DA CONCORDÂNCIA DOS ESPECIALISTAS ---');
@@ -2310,7 +2300,7 @@ disp(T_resumo_concordancia);
 %% ---------------------------------------------------------
 
 arquivo_heatmaps = ...
-    'Concordancia_Rankings_Especialistas_S1_S2.xlsx';
+    'Concordancia_Rankings_Especialistas_S1_SIPREM.xlsx';
 
 if isfile(arquivo_heatmaps)
 
@@ -2347,37 +2337,37 @@ writetable( ...
 
 fprintf('\nArquivos de concordância criados:\n');
 fprintf('%s\n',arquivo_heatmaps);
-fprintf('Heatmap_Footrule_Normalizada_Especialistas_S1_S2.png\n');
-fprintf('Heatmap_Kendall_Tau_Especialistas_S1_S2.png\n');
+fprintf('Heatmap_Footrule_Normalizada_Especialistas_S1_SIPREM.png\n');
+fprintf('Heatmap_Kendall_Tau_Especialistas_S1_SIPREM.png\n');
 %% =========================================================
 % 19. FIGURA-RESUMO 4: COMPARAÇÃO DOS TOP 10
 %% =========================================================
 top10 = min(10, nReq);
-req_union = unique([idx_s1(1:top10); idx_s2(1:top10)], 'stable');
+req_union = unique([idx_s1(1:top10); idx_SIPREM(1:top10)], 'stable');
 labels_union = req_labels(req_union);
 
 figure('Color','w','Position',[140 140 1100 520]);
 bar([phi_liq_base(req_union), phi_net(req_union)], 'grouped');
-title('Comparação dos requisitos mais relevantes em S1 e S2', 'FontSize', 13, 'FontWeight', 'bold');
+title('Comparação dos requisitos mais relevantes em S1 e SIPREM', 'FontSize', 13, 'FontWeight', 'bold');
 xlabel('Requisitos');
 ylabel('\phi_{net}');
-legend({'S1','S2'}, 'Location', 'best');
+legend({'S1','SIPREM'}, 'Location', 'best');
 set(gca, 'XTick', 1:numel(req_union), 'XTickLabel', labels_union);
 xtickangle(45);
 grid on;
 box on;
 %% =========================================================
-% 20. FIGURA-RESUMO 5: BOXPLOT DOS FLUXOS LÍQUIDOS INDIVIDUAIS (S2)
+% 20. FIGURA-RESUMO 5: BOXPLOT DOS FLUXOS LÍQUIDOS INDIVIDUAIS (SIPREM)
 
 figure('Color','w','Position',[150 150 1150 500]);
 
 boxplot(phi_net_experts', 'Labels', req_labels, 'Whisker', 1.5);
 
 hold on;
-plot(1:nReq, phi_net, 'r*', 'MarkerSize', 7); % fluxo agregado do grupo S2
+plot(1:nReq, phi_net, 'r*', 'MarkerSize', 7); % fluxo agregado do grupo SIPREM
 hold off;
 
-title('Boxplot dos fluxos líquidos individuais por requisito (S2)', ...
+title('Boxplot dos fluxos líquidos individuais por requisito (SIPREM)', ...
     'FontSize', 13, 'FontWeight', 'bold');
 xlabel('Requisitos');
 ylabel('\phi_{net}');
@@ -2385,7 +2375,7 @@ xtickangle(45);
 grid on;
 box on;
 
-legend({'Fluxo agregado S2'}, 'Location', 'best');
+legend({'Fluxo agregado SIPREM'}, 'Location', 'best');
 %% =========================================================
 % PROMETHEE I - CENÁRIO S1
 % =========================================================
@@ -2523,7 +2513,7 @@ for e = 1:nExperts
 
     for k = 1:nCrit
 
-        wf = squeeze(info_s2.w_fuzzy_individual(k,:,e));
+        wf = squeeze(info_SIPREM.w_fuzzy_individual(k,:,e));
 
         % Centroide para trapézio
         w_defuzz_individual(k,e) = ...
@@ -2595,68 +2585,68 @@ fprintf('Chi2 = %.4f\n',chi2);
 fprintf('p-value = %.6f\n',p);
 
 %% =========================================================
-% PROMETHEE I - CENÁRIO S2
+% PROMETHEE I - CENÁRIO SIPREM
 % =========================================================
 
 nReq = length(Phi_plus);
 
-relation_s2 = zeros(nReq); % matriz de relações PROMETHEE I - S2
+relation_SIPREM = zeros(nReq); % matriz de relações PROMETHEE I - SIPREM
 
 for i = 1:nReq
     for j = 1:nReq
         if i == j
-            relation_s2(i,j) = 0;
+            relation_SIPREM(i,j) = 0;
             continue
         end
 
         if Phi_plus(i) > Phi_plus(j) && Phi_minus(i) < Phi_minus(j)
-            relation_s2(i,j) = 1;    % i domina j (P)
+            relation_SIPREM(i,j) = 1;    % i domina j (P)
 
         elseif Phi_plus(i) < Phi_plus(j) && Phi_minus(i) > Phi_minus(j)
-            relation_s2(i,j) = -1;   % j domina i (P-)
+            relation_SIPREM(i,j) = -1;   % j domina i (P-)
 
         elseif Phi_plus(i) > Phi_plus(j) && Phi_minus(i) > Phi_minus(j)
-            relation_s2(i,j) = 2;    % incomparável (R)
+            relation_SIPREM(i,j) = 2;    % incomparável (R)
 
         elseif Phi_plus(i) < Phi_plus(j) && Phi_minus(i) < Phi_minus(j)
-            relation_s2(i,j) = 2;    % incomparável (R)
+            relation_SIPREM(i,j) = 2;    % incomparável (R)
 
         else
-            relation_s2(i,j) = 0;    % indiferença (I)
+            relation_SIPREM(i,j) = 0;    % indiferença (I)
         end
     end
 end
 %% =========================================================
-% PARES INCOMPARÁVEIS - S2
+% PARES INCOMPARÁVEIS - SIPREM
 % =========================================================
 
-req_i_s2 = strings(0,1);
-req_j_s2 = strings(0,1);
+req_i_SIPREM = strings(0,1);
+req_j_SIPREM = strings(0,1);
 
 for i = 1:nReq
     for j = i+1:nReq   % só metade superior para evitar duplicidade
-        if relation_s2(i,j) == 2
-            req_i_s2(end+1,1) = string(req_labels{i});
-            req_j_s2(end+1,1) = string(req_labels{j});
+        if relation_SIPREM(i,j) == 2
+            req_i_SIPREM(end+1,1) = string(req_labels{i});
+            req_j_SIPREM(end+1,1) = string(req_labels{j});
         end
     end
 end
 
-T_incomp_s2 = table(req_i_s2, req_j_s2, ...
+T_incomp_SIPREM = table(req_i_SIPREM, req_j_SIPREM, ...
     'VariableNames', {'Req_1','Req_2'});
 
 % disp(' ')
-% disp('--- PARES INCOMPARÁVEIS NO PROMETHEE I - S2 ---')
-% disp(T_incomp_s2)
+% disp('--- PARES INCOMPARÁVEIS NO PROMETHEE I - SIPREM ---')
+% disp(T_incomp_SIPREM)
 
-writetable(T_incomp_s2, 'PROMETHEE_I_Incomparable_Pairs_S2.xlsx');
+writetable(T_incomp_SIPREM, 'PROMETHEE_I_Incomparable_Pairs_SIPREM.xlsx');
 
 %% =========================================================
-% MATRIZ DE RELAÇÕES PROMETHEE I - S2 (COM LEGENDA)
+% MATRIZ DE RELAÇÕES PROMETHEE I - SIPREM (COM LEGENDA)
 % =========================================================
 figure('Color','w','Position',[310 210 720 620])
 
-imagesc(relation_s2)
+imagesc(relation_SIPREM)
 
 % Colormap discreto (ordem: -1, 0, 1, 2)
 cmap = [
@@ -2675,10 +2665,12 @@ caxis([-1 2])
 colorbar('Ticks',[-1 0 1 2], ...
          'TickLabels',{'P- (Dominado)','I (Indiferente)','P (Domina)','R (Incomparável)'})
 
-title('PROMETHEE I relations - Scenario S2')
-xlabel('Alternative j')
-ylabel('Alternative i')
+title('Relações do Fuzzy PROMETHEE I no SIPREM', ...
+    'FontSize', 13, ...
+    'FontWeight', 'bold');
 
+xlabel('Requisito j');
+ylabel('Requisito i');
 set(gca,'XTick',1:nReq,'XTickLabel',req_labels)
 set(gca,'YTick',1:nReq,'YTickLabel',req_labels)
 
@@ -2687,43 +2679,43 @@ grid on
 box on
 
 %% =========================================================
-% EXPORTAR MATRIZ DE RELAÇÕES PROMETHEE I - S2
+% EXPORTAR MATRIZ DE RELAÇÕES PROMETHEE I - SIPREM
 % =========================================================
-rel_matrix_text_s2 = cell(nReq, nReq);
+rel_matrix_text_SIPREM = cell(nReq, nReq);
 
 for i = 1:nReq
     for j = 1:nReq
         if i == j
-            rel_matrix_text_s2{i,j} = '-';
+            rel_matrix_text_SIPREM{i,j} = '-';
         else
-            switch relation_s2(i,j)
+            switch relation_SIPREM(i,j)
                 case 1
-                    rel_matrix_text_s2{i,j} = 'P (Outranks)';
+                    rel_matrix_text_SIPREM{i,j} = 'P (Outranks)';
                 case -1
-                    rel_matrix_text_s2{i,j} = 'P- (Outranked)';
+                    rel_matrix_text_SIPREM{i,j} = 'P- (Outranked)';
                 case 2
-                    rel_matrix_text_s2{i,j} = 'R (Incomparable)';
+                    rel_matrix_text_SIPREM{i,j} = 'R (Incomparable)';
                 case 0
-                    rel_matrix_text_s2{i,j} = 'I (Indifferent)';
+                    rel_matrix_text_SIPREM{i,j} = 'I (Indifferent)';
             end
         end
     end
 end
 
-T_rel_matrix_s2 = cell2table(rel_matrix_text_s2, ...
+T_rel_matrix_SIPREM = cell2table(rel_matrix_text_SIPREM, ...
     'VariableNames', req_labels, ...
     'RowNames', req_labels);
 
-writetable(T_rel_matrix_s2, 'PROMETHEE_I_Relation_Matrix_S2.xlsx', 'WriteRowNames', true);
+writetable(T_rel_matrix_SIPREM, 'PROMETHEE_I_Relation_Matrix_SIPREM.xlsx', 'WriteRowNames', true);
 
 % disp(' ')
-% disp('--- PROMETHEE I relation matrix exported for S2 ---')
-% disp('File: PROMETHEE_I_Relation_Matrix_S2.xlsx')
+% disp('--- PROMETHEE I relation matrix exported for SIPREM ---')
+% disp('File: PROMETHEE_I_Relation_Matrix_SIPREM.xlsx')
 
 
 
 %% =========================================================
-% RESUMO DAS RELAÇÕES PROMETHEE I - S1 vs S2
+% RESUMO DAS RELAÇÕES PROMETHEE I - S1 vs SIPREM
 % =========================================================
 
 count_relations = @(R) struct( ...
@@ -2733,21 +2725,21 @@ count_relations = @(R) struct( ...
     'I',  sum(R(:) == 0) - nReq ); % desconta diagonal
 
 rel_s1 = count_relations(relation_s1);
-rel_s2 = count_relations(relation_s2);
+rel_SIPREM = count_relations(relation_SIPREM);
 
 T_prom1_compare = table( ...
-    ["S1"; "S2"], ...
-    [rel_s1.P;  rel_s2.P], ...
-    [rel_s1.Pm; rel_s2.Pm], ...
-    [rel_s1.R;  rel_s2.R], ...
-    [rel_s1.I;  rel_s2.I], ...
+    ["S1"; "SIPREM"], ...
+    [rel_s1.P;  rel_SIPREM.P], ...
+    [rel_s1.Pm; rel_SIPREM.Pm], ...
+    [rel_s1.R;  rel_SIPREM.R], ...
+    [rel_s1.I;  rel_SIPREM.I], ...
     'VariableNames', {'Scenario','P_Outranks','Pminus_Outranked','R_Incomparable','I_Indifferent'});
 
 % disp(' ')
-% disp('--- PROMETHEE I relation summary: S1 vs S2 ---')
+% disp('--- PROMETHEE I relation summary: S1 vs SIPREM ---')
 % disp(T_prom1_compare)
 
-writetable(T_prom1_compare, 'PROMETHEE_I_Summary_S1_S2.xlsx');
+writetable(T_prom1_compare, 'PROMETHEE_I_Summary_S1_SIPREM.xlsx');
 
 %% =========================================================
 % QUANTIDADE DE INCOMPARABILIDADES POR REQUISITO - S1
@@ -2771,78 +2763,81 @@ T_num_incomp_s1 = sortrows(T_num_incomp_s1, 'NumIncomparabilities_S1', 'descend'
 writetable(T_num_incomp_s1, 'PROMETHEE_I_Num_Incomparabilities_S1.xlsx');
 
 %% =========================================================
-% QUANTIDADE DE INCOMPARABILIDADES POR REQUISITO - S2
+% QUANTIDADE DE INCOMPARABILIDADES POR REQUISITO - SIPREM
 % =========================================================
 
-num_incomp_s2 = zeros(nReq,1);
+num_incomp_SIPREM = zeros(nReq,1);
 
 for i = 1:nReq
-    num_incomp_s2(i) = sum(relation_s2(i,:) == 2);
+    num_incomp_SIPREM(i) = sum(relation_SIPREM(i,:) == 2);
 end
 
-T_num_incomp_s2 = table(req_labels(:), IDs, num_incomp_s2, ...
-    'VariableNames', {'Req','ID','NumIncomparabilities_S2'});
+T_num_incomp_SIPREM = table(req_labels(:), IDs, num_incomp_SIPREM, ...
+    'VariableNames', {'Req','ID','NumIncomparabilities_SIPREM'});
 
-T_num_incomp_s2 = sortrows(T_num_incomp_s2, 'NumIncomparabilities_S2', 'descend');
+T_num_incomp_SIPREM = sortrows(T_num_incomp_SIPREM, 'NumIncomparabilities_SIPREM', 'descend');
 % 
 % disp(' ')
-% disp('--- QUANTIDADE DE INCOMPARABILIDADES POR REQUISITO - S2 ---')
-% disp(T_num_incomp_s2)
+% disp('--- QUANTIDADE DE INCOMPARABILIDADES POR REQUISITO - SIPREM ---')
+% disp(T_num_incomp_SIPREM)
 
-writetable(T_num_incomp_s2, 'PROMETHEE_I_Num_Incomparabilities_S2.xlsx');
+writetable(T_num_incomp_SIPREM, 'PROMETHEE_I_Num_Incomparabilities_SIPREM.xlsx');
 
 %% =========================================================
-% COMPARAÇÃO DAS INCOMPARABILIDADES - S1 vs S2
+% COMPARAÇÃO DAS INCOMPARABILIDADES - S1 vs SIPREM
 % =========================================================
 
 req_i = strings(0,1);
 req_j = strings(0,1);
 incomp_s1_col = false(0,1);
-incomp_s2_col = false(0,1);
+incomp_SIPREM_col = false(0,1);
 
 for i = 1:nReq
     for j = i+1:nReq
         s1_inc = (relation_s1(i,j) == 2);
-        s2_inc = (relation_s2(i,j) == 2);
+        SIPREM_inc = (relation_SIPREM(i,j) == 2);
 
-        if s1_inc || s2_inc
+        if s1_inc || SIPREM_inc
             req_i(end+1,1) = string(req_labels{i});
             req_j(end+1,1) = string(req_labels{j});
             incomp_s1_col(end+1,1) = s1_inc;
-            incomp_s2_col(end+1,1) = s2_inc;
+            incomp_SIPREM_col(end+1,1) = SIPREM_inc;
         end
     end
 end
 
-T_incomp_compare = table(req_i, req_j, incomp_s1_col, incomp_s2_col, ...
-    'VariableNames', {'Req_1','Req_2','Incomparable_S1','Incomparable_S2'});
+T_incomp_compare = table(req_i, req_j, incomp_s1_col, incomp_SIPREM_col, ...
+    'VariableNames', {'Req_1','Req_2','Incomparable_S1','Incomparable_SIPREM'});
 
 % disp(' ')
-% disp('--- COMPARAÇÃO DAS INCOMPARABILIDADES S1 vs S2 ---')
+% disp('--- COMPARAÇÃO DAS INCOMPARABILIDADES S1 vs SIPREM ---')
 % disp(T_incomp_compare)
 
-writetable(T_incomp_compare, 'PROMETHEE_I_Incomparabilities_S1_S2.xlsx');
+writetable(T_incomp_compare, 'PROMETHEE_I_Incomparabilities_S1_SIPREM.xlsx');
 %% =========================================================
-% GRÁFICO: NÚMERO DE INCOMPARABILIDADES POR REQUISITO (S1 vs S2)
+% GRÁFICO: NÚMERO DE INCOMPARABILIDADES POR REQUISITO (S1 vs SIPREM)
 % =========================================================
 
 figure('Color','w','Position',[180 140 1100 480]);
-bar([num_incomp_s1, num_incomp_s2], 'grouped');
 
-title('Number of PROMETHEE I incomparabilities per requirement', ...
+bar(num_incomp_SIPREM);
+
+title('Número de incomparabilidades por requisito no SIPREM', ...
     'FontSize', 13, 'FontWeight', 'bold');
-xlabel('Requirements');
-ylabel('Number of incomparable relations');
-legend({'S1','S2'}, 'Location', 'best');
+
+xlabel('Requisitos');
+ylabel('Número de relações de incomparabilidade');
+
 set(gca, 'XTick', 1:nReq, 'XTickLabel', req_labels);
 xtickangle(45);
+
 grid on;
 box on;
 %% =========================================================
 % GAIA PLANE FIEL AO PROMETHEE (via fluxos líquidos unicritério)
 %% =========================================================
 
-% Matriz dos fluxos líquidos unicritério do cenário S2 agregado
+% Matriz dos fluxos líquidos unicritério do cenário SIPREM agregado
 % linhas = requisitos
 % colunas = critérios
 Phi_uni = computeUnicriterionNetFlows(F, w_group_defuzz, critDir, pref_types, q_vals, p_vals);
@@ -2913,26 +2908,26 @@ box on
 hold off
 
 %% =========================================================
-% MUDANÇAS DE RELAÇÕES PROMETHEE I: S1 vs S2
+% MUDANÇAS DE RELAÇÕES PROMETHEE I: S1 vs SIPREM
 % =========================================================
 
 change_per_req_prom1 = zeros(nReq,1);
 
 for i = 1:nReq
-    % conta quantas relações da linha i mudaram entre S1 e S2
-    change_per_req_prom1(i) = sum(relation_s1(i,:) ~= relation_s2(i,:));
+    % conta quantas relações da linha i mudaram entre S1 e SIPREM
+    change_per_req_prom1(i) = sum(relation_s1(i,:) ~= relation_SIPREM(i,:));
 end
 
 T_prom1_req_changes = table(req_labels(:), IDs, change_per_req_prom1, ...
-    'VariableNames', {'Req','ID','NumRelationChanges_S1_to_S2'});
+    'VariableNames', {'Req','ID','NumRelationChanges_S1_to_SIPREM'});
 
-T_prom1_req_changes = sortrows(T_prom1_req_changes, 'NumRelationChanges_S1_to_S2', 'descend');
+T_prom1_req_changes = sortrows(T_prom1_req_changes, 'NumRelationChanges_S1_to_SIPREM', 'descend');
 
 % disp(' ')
-% disp('--- REQUISITOS QUE MAIS MUDARAM NO PROMETHEE I (S1 vs S2) ---')
+% disp('--- REQUISITOS QUE MAIS MUDARAM NO PROMETHEE I (S1 vs SIPREM) ---')
 % disp(T_prom1_req_changes)
 
-writetable(T_prom1_req_changes, 'PROMETHEE_I_Requirement_Changes_S1_S2.xlsx');
+writetable(T_prom1_req_changes, 'PROMETHEE_I_Requirement_Changes_S1_SIPREM.xlsx');
 
 %% =========================================================
 % GRÁFICO: NÚMERO DE MUDANÇAS DE RELAÇÃO POR REQUISITO
@@ -2943,7 +2938,7 @@ writetable(T_prom1_req_changes, 'PROMETHEE_I_Requirement_Changes_S1_S2.xlsx');
 figure('Color','w','Position',[180 140 1100 450]);
 bar(categorical(req_labels(ord_prom1_changes)), change_per_req_prom1(ord_prom1_changes));
 
-title('Number of PROMETHEE I relation changes per requirement (S1 vs S2)', ...
+title('Number of PROMETHEE I relation changes per requirement (S1 vs SIPREM)', ...
     'FontSize', 13, 'FontWeight', 'bold');
 xlabel('Requirements');
 ylabel('Number of changed pairwise relations');
@@ -2959,10 +2954,10 @@ xtickangle(45);
 total_pairs = nReq*(nReq-1)/2;
 
 num_incomp_s1_total = sum(triu(relation_s1==2,1),'all');
-num_incomp_s2_total = sum(triu(relation_s2==2,1),'all');
+num_incomp_SIPREM_total = sum(triu(relation_SIPREM==2,1),'all');
 
 perc_s1 = 100*num_incomp_s1_total/total_pairs;
-perc_s2 = 100*num_incomp_s2_total/total_pairs;
+perc_SIPREM = 100*num_incomp_SIPREM_total/total_pairs;
 
 fprintf('\n');
 fprintf('========================================\n');
@@ -2972,14 +2967,14 @@ fprintf('========================================\n');
 fprintf('S1 = %d pares incomparáveis (%.2f%%)\n', ...
         num_incomp_s1_total, perc_s1);
 
-fprintf('S2 = %d pares incomparáveis (%.2f%%)\n', ...
-        num_incomp_s2_total, perc_s2);
+fprintf('SIPREM = %d pares incomparáveis (%.2f%%)\n', ...
+        num_incomp_SIPREM_total, perc_SIPREM);
 
 %% =========================================================
 % DELTA DE RANK
 %% =========================================================
 
-delta_rank = rank_s2 - rank_s1;
+delta_rank = rank_SIPREM - rank_s1;
 
 mean_delta_rank = mean(abs(delta_rank));
 
@@ -2994,10 +2989,10 @@ fprintf('Media |Δ Rank| = %.2f\n',mean_delta_rank);
 fprintf('Maximo |Δ Rank| = %d\n',max_delta_rank);
 
 [~,ord_s1] = sort(phi_liq_base,'descend');
-[~,ord_s2] = sort(phi_net,'descend');
+[~,ord_SIPREM] = sort(phi_net,'descend');
 
 top10_s1 = ord_s1(1:10);
-top10_s2 = ord_s2(1:10);
+top10_SIPREM = ord_SIPREM(1:10);
 
 %% =========================================================
 % TOP-10 OVERLAP
@@ -3006,9 +3001,9 @@ top10_s2 = ord_s2(1:10);
 top10 = min(10,nReq);
 
 top10_s1 = idx_s1(1:top10);
-top10_s2 = idx_s2(1:top10);
+top10_SIPREM = idx_SIPREM(1:top10);
 
-top10_comum = intersect(top10_s1,top10_s2);
+top10_comum = intersect(top10_s1,top10_SIPREM);
 
 num_overlap = length(top10_comum);
 
@@ -3028,10 +3023,10 @@ fprintf('Overlap = %.1f %%\n', ...
 disp('Requisitos presentes nos dois Top-10:')
 disp(req_labels(top10_comum)')
 
-union_top10 = union(top10_s1,top10_s2);
+union_top10 = union(top10_s1,top10_SIPREM);
 
 jaccard_top10 = ...
-    length(intersect(top10_s1,top10_s2)) / ...
+    length(intersect(top10_s1,top10_SIPREM)) / ...
     length(union_top10);
 
 fprintf('Jaccard Top-10 = %.3f\n', ...
@@ -3042,7 +3037,7 @@ fprintf('Jaccard Top-10 = %.3f\n', ...
 % DELTA DE RANK
 %% =========================================================
 
-delta_rank = rank_s2 - rank_s1;
+delta_rank = rank_SIPREM - rank_s1;
 
 mean_delta_rank = mean(abs(delta_rank));
 
@@ -3057,10 +3052,10 @@ fprintf('Media |Δ Rank| = %.2f\n',mean_delta_rank);
 fprintf('Maximo |Δ Rank| = %d\n',max_delta_rank);
 
 [~,ord_s1] = sort(phi_liq_base,'descend');
-[~,ord_s2] = sort(phi_net,'descend');
+[~,ord_SIPREM] = sort(phi_net,'descend');
 
 top10_s1 = ord_s1(1:10);
-top10_s2 = ord_s2(1:10);
+top10_SIPREM = ord_SIPREM(1:10);
 
 
 % RESUMO DE INCOMPARABILIDADES
@@ -3069,10 +3064,10 @@ top10_s2 = ord_s2(1:10);
 total_pairs = nReq*(nReq-1)/2;
 
 num_incomp_s1_total = sum(triu(relation_s1==2,1),'all');
-num_incomp_s2_total = sum(triu(relation_s2==2,1),'all');
+num_incomp_SIPREM_total = sum(triu(relation_SIPREM==2,1),'all');
 
 perc_s1 = 100*num_incomp_s1_total/total_pairs;
-perc_s2 = 100*num_incomp_s2_total/total_pairs;
+perc_SIPREM = 100*num_incomp_SIPREM_total/total_pairs;
 
 fprintf('\n');
 fprintf('========================================\n');
@@ -3082,13 +3077,13 @@ fprintf('========================================\n');
 fprintf('S1 = %d pares incomparáveis (%.2f%%)\n', ...
         num_incomp_s1_total, perc_s1);
 
-fprintf('S2 = %d pares incomparáveis (%.2f%%)\n', ...
-        num_incomp_s2_total, perc_s2);
+fprintf('SIPREM = %d pares incomparáveis (%.2f%%)\n', ...
+        num_incomp_SIPREM_total, perc_SIPREM);
 
 %% =========================================================
-% COMPARAÇÃO S1 E S2
+% COMPARAÇÃO S1 E SIPREM
 %% =========================================================
-% RESUMO EXECUTIVO S1 x S2
+% RESUMO EXECUTIVO S1 x SIPREM
 %% =========================================================
 
 T_comp = table( ...
@@ -3113,23 +3108,23 @@ T_comp = table( ...
     NaN ...
     ], ...
     [ ...
-    num_incomp_s2_total; ...
-    perc_s2; ...
+    num_incomp_SIPREM_total; ...
+    perc_SIPREM; ...
     mean_delta_rank; ...
     max_delta_rank; ...
     num_overlap; ...
     perc_overlap; ...
     jaccard_top10; ...
-   rho_s1_s2 ...
+   rho_s1_SIPREM ...
     ], ...
     'VariableNames',{ ...
     'Indicador', ...
     'S1', ...
-    'S2' ...
+    'SIPREM' ...
     });
 
 writetable(T_comp,...
-    'Comparacao_S1_S2.xlsx',...
+    'Comparacao_S1_SIPREM.xlsx',...
     'Sheet','Resumo');
 
 %% =========================================================
@@ -3145,7 +3140,7 @@ writetable(T_phi_uni, 'GAIA_Fluxos_Unicriterio.xlsx', 'WriteRowNames', true);
 T_gaia = table(delta_gaia, ...
                100*latent_gaia(1)/sum(latent_gaia), ...
                100*latent_gaia(2)/sum(latent_gaia), ...
-    'VariableNames', {'Delta_GAIA_percent', 'Axis1_percent', 'Axis2_percent'});
+    'VariableNames', {'Delta_GAIA_percent', 'Axis1_percent', 'AxiSIPREM_percent'});
 
 writetable(T_gaia, 'Indicadores_GAIA.xlsx');
 
@@ -3154,9 +3149,9 @@ writetable(T_gaia, 'Indicadores_GAIA.xlsx');
 % disp(T_gaia);
 % %% =========================================================
 % figure
-% gscatter(rank_s2,phi_net,cat)
+% gscatter(rank_SIPREM,phi_net,cat)
 % 
-% xlabel('Ranking S2')
+% xlabel('Ranking SIPREM')
 % ylabel('\phi_{net}')
 % title('Classificação dos requisitos')
 % grid on
@@ -3166,16 +3161,15 @@ writetable(T_gaia, 'Indicadores_GAIA.xlsx');
 % HEATMAP DAS CLASSIFICAÇÕES
 %% =========================================================
 
-cat_matrix = [cat_exp, cat_s2, cat_s1];
+cat_matrix = [cat_exp, cat_SIPREM];
 
-cat_labels = cell(1,nExperts+2);
+cat_labels = cell(1,nExperts+1);
 
 for e = 1:nExperts
     cat_labels{e} = sprintf('E%d',e);
 end
 
-cat_labels{nExperts+1} = 'S2';
-cat_labels{nExperts+2} = 'S1';
+cat_labels{nExperts+1} = 'SIPREM';
 
 cat_code = zeros(size(cat_matrix));
 
@@ -3183,7 +3177,7 @@ for j = 1:size(cat_matrix,2)
     cat_code(:,j) = classToCode(cat_matrix(:,j));
 end
 
-[~, ord_cat] = sort(rank_s2,'ascend');
+[~, ord_cat] = sort(rank_SIPREM,'ascend');
 
 fig_classificacoes = figure( ...
     'Color','w', ...
@@ -3231,7 +3225,7 @@ box on;
 % CONSENSO DE CLASSIFICAÇÃO POR REQUISITO
 %
 % Mede o percentual de especialistas que atribuíram
-% exatamente a mesma classe do resultado consolidado S2.
+% exatamente a mesma classe do resultado consolidado SIPREM.
 %% =========================================================
 
 percentual_consenso = zeros(nReq,1);
@@ -3239,16 +3233,16 @@ percentual_consenso = zeros(nReq,1);
 for i = 1:nReq
 
     percentual_consenso(i) = ...
-        100*mean(cat_exp(i,:) == cat_s2(i));
+        100*mean(cat_exp(i,:) == cat_SIPREM(i));
 
 end
 
 T_consenso_classe = table( ...
     req_labels(:), ...
-    cat_s2(:), ...
+    cat_SIPREM(:), ...
     percentual_consenso, ...
     'VariableNames', ...
-    {'Requisito','Classe_S2','PercentualConsenso'});
+    {'Requisito','Classe_SIPREM','PercentualConsenso'});
 
 T_consenso_classe = sortrows( ...
     T_consenso_classe, ...
@@ -3270,11 +3264,11 @@ bar(categorical(T_consenso_classe.Requisito), ...
 
 ylim([0 100]);
 
-ylabel('Especialistas concordando com S2 (%)');
+ylabel('Especialistas concordando com SIPREM (%)');
 
 xlabel('Requisitos');
 
-title('Consenso dos especialistas em relação à classificação consolidada (S2)', ...
+title('Consenso dos especialistas em relação à classificação consolidada (SIPREM)', ...
     'FontSize',13,...
     'FontWeight','bold');
 
@@ -3295,10 +3289,10 @@ for e = 1:nExperts
 
 end
 
-vars{end+1} = cat_s2(:);
+vars{end+1} = cat_SIPREM(:);
 vars{end+1} = cat_s1(:);
 
-varNames{end+1} = 'Classe_S2';
+varNames{end+1} = 'Classe_SIPREM';
 varNames{end+1} = 'Classe_S1';
 
 T_classes = table(vars{:},...
@@ -3313,8 +3307,8 @@ T_classes = table(vars{:},...
 % MATRIZ COMPLETA DE MUDANÇAS DE CLASSIFICAÇÃO
 %% =========================================================
 
-% Classificações dos especialistas, grupo S2 e cenário S1
-cat_matrix = [cat_exp, cat_s2(:), cat_s1(:)];
+% Classificações dos especialistas, grupo SIPREM e cenário S1
+cat_matrix = [cat_exp, cat_SIPREM(:), cat_s1(:)];
 
 % Rótulos dinâmicos
 cat_labels = cell(1, nExperts + 2);
@@ -3323,7 +3317,7 @@ for e = 1:nExperts
     cat_labels{e} = sprintf('E%d', e);
 end
 
-cat_labels{nExperts + 1} = 'S2';
+cat_labels{nExperts + 1} = 'SIPREM';
 cat_labels{nExperts + 2} = 'S1';
 
 nSources = size(cat_matrix, 2);
@@ -3503,11 +3497,11 @@ end
 % 3) checagem ampliada de 3 posicoes acima/abaixo
 % =========================================================
 
-% ordenar pelo ranking S2 (PROMETHEE II)
-[~, ord_rank] = sort(rank_s2, 'ascend');
+% ordenar pelo ranking SIPREM (PROMETHEE II)
+[~, ord_rank] = sort(rank_SIPREM, 'ascend');
 
 Req_ord   = req_labels(ord_rank);
-Rank_ord  = rank_s2(ord_rank);
+Rank_ord  = rank_SIPREM(ord_rank);
 Phi_ord   = phi_net(ord_rank);
 Grupo_ord = cat(ord_rank);
 
@@ -3524,7 +3518,7 @@ end
 % ---------------------------------------------------------
 num_incomp_global = zeros(nReq,1);
 for i = 1:nReq
-    num_incomp_global(i) = sum(relation_s2(i,:) == 2);
+    num_incomp_global(i) = sum(relation_SIPREM(i,:) == 2);
 end
 NumIncomp_ord = num_incomp_global(ord_rank);
 
@@ -3552,7 +3546,7 @@ for k = 1:nReq
         Inc_Acima_1(k) = "-";
     else
         j_up = ord_rank(k-1);
-        if relation_s2(i,j_up) == 2
+        if relation_SIPREM(i,j_up) == 2
             Inc_Acima_1(k) = "Sim";
         else
             Inc_Acima_1(k) = "Não";
@@ -3563,7 +3557,7 @@ for k = 1:nReq
         Inc_Abaixo_1(k) = "-";
     else
         j_down = ord_rank(k+1);
-        if relation_s2(i,j_down) == 2
+        if relation_SIPREM(i,j_down) == 2
             Inc_Abaixo_1(k) = "Sim";
         else
             Inc_Abaixo_1(k) = "Não";
@@ -3590,7 +3584,7 @@ for k = 1:nReq
         count_up = 0;
         for t = idx_up
             j = ord_rank(t);
-            if relation_s2(i,j) == 2
+            if relation_SIPREM(i,j) == 2
                 count_up = count_up + 1;
             end
         end
@@ -3610,7 +3604,7 @@ for k = 1:nReq
         count_down = 0;
         for t = idx_down
             j = ord_rank(t);
-            if relation_s2(i,j) == 2
+            if relation_SIPREM(i,j) == 2
                 count_down = count_down + 1;
             end
         end
@@ -3694,7 +3688,7 @@ writetable(T_local, 'Tabela_Final_Rank_Grupo_Incomp_Local.xlsx');
 %% =========================================================
 
 ResultadosExpress.PhiNet    = phi_net;
-ResultadosExpress.Rank      = rank_s2;
+ResultadosExpress.Rank      = rank_SIPREM;
 ResultadosExpress.Categoria = cat;
 ResultadosExpress.ID        = IDs;
 ResultadosExpress.Req       = req_labels;
@@ -3860,8 +3854,18 @@ for i = 1:numel(eixos)
 end
 
 % Usa o nome da janela como alternativa
-if strlength(strtrim(string(fig.Name))) > 0
-    titulo = string(fig.Name);
+if isgraphics(fig,'figure')
+    try
+        nome_figura = string(fig.Name);
+
+        if strlength(strtrim(nome_figura)) > 0
+            titulo = nome_figura;
+        end
+
+    catch
+        % Handle inválido ou figura já deletada:
+        % mantém titulo vazio.
+    end
 end
 
 end
@@ -4046,7 +4050,14 @@ function kappa = weightedCohenKappa(x, y, nClasses, tipoPeso)
 
 end
 
-function cat = classify_requirements_kmeans(phi_vec, key_idx)
+function [cat, idx_km_full, C_sorted, group_names] = ...
+    classify_requirements_kmeans(phi_vec, key_idx)
+nReq = numel(phi_vec);
+
+cat = strings(nReq,1);
+idx_km_full = nan(nReq,1);
+C_sorted = [];
+group_names = strings(0,1);
     % -----------------------------------------------------
     % Classificação:
     %   - Key: requisitos previamente definidos
@@ -4090,9 +4101,9 @@ function cat = classify_requirements_kmeans(phi_vec, key_idx)
 
     % Replicates melhora estabilidade
     [idx_km, C] = kmeans(phi_rest, k, ...
-        'Replicates', 20, ...
-        'Start', 'plus', ...
-        'Distance', 'sqeuclidean');
+    'Replicates', 20, ...
+    'Start', 'plus', ...
+    'Distance', 'sqeuclidean');
 
     % Ordena centróides do maior para o menor
     [~, ordC] = sort(C, 'descend');
@@ -4513,37 +4524,7 @@ function Phi_uni = computeUnicriterionNetFlows(F, w_ref, critDir, pref_types, q_
     end
 end
 
-function [idx_km_full, C_sorted, group_names] = get_kmeans_groups(phi_vec, key_idx)
-    % Retorna a alocação K-means apenas para auditoria
-    nReq = numel(phi_vec);
-    idx_km_full = nan(nReq,1);
 
-    key_idx = unique(key_idx(:));
-    idx_rest = setdiff((1:nReq)', key_idx);
-    n_rest = numel(idx_rest);
-
-    if n_rest < 3
-        C_sorted = [];
-        group_names = strings(0,1);
-        return;
-    end
-
-    phi_rest = phi_vec(idx_rest);
-
-    [idx_km, C] = kmeans(phi_rest, 3, ...
-        'Replicates', 20, ...
-        'Start', 'plus', ...
-        'Distance', 'sqeuclidean');
-
-    [C_sorted, ordC] = sort(C, 'descend');
-
-    group_names = strings(3,1);
-    group_names(1) = "Grupo 1";
-    group_names(2) = "Grupo 2";
-    group_names(3) = "Grupo 3";
-
-    idx_km_full(idx_rest) = idx_km;
-end
 
 function trap = fuzzifyByScale(val, scale_max, TFN_eval_5, TFN_eval_7, TFN_eval_9)
 
