@@ -9,7 +9,7 @@ if ~exist(pasta_figuras, 'dir')
 end
 
 %% CONFIGURAÇÕES
-N_mc = 2000; % Elevado para 1000 iterações conforme validação estatística
+N_mc = 200; % Elevado para 1000 iterações conforme validação estatística
 rng(42);
 
 input_file = 'dados_requisitos_lista.xlsx';
@@ -47,7 +47,15 @@ p_base = [0, 0.21*A_scale(2), 0.21*A_scale(3), 0.21*A_scale(4), 0.21*A_scale(5)]
 
 % Escalas Trapezoidais fiéis ao seu modelo
 TFN_eval_5 = [1.0 1.0 1.5 2.0; 1.5 2.0 2.0 2.5; 2.0 2.5 3.0 3.5; 3.0 3.5 4.0 4.5; 4.0 4.5 5.0 5.0];
-TFN_eval_7 = [1.0 1.0 1.5 2.0; 1.0 1.5 2.5 3.0; 2.0 2.5 3.5 4.0; 3.0 3.5 4.5 5.0; 4.0 4.5 5.5 6.0; 5.0 5.5 6.5 7.0; 6.0 6.5 7.0 7.0];
+TFN_eval_7 = [
+    0.0  0.0   1.0   2.0
+    1.0  2.0   2.0   3.0
+    2.0  3.0   4.0   5.0
+    4.0  5.0   5.0   6.0
+    5.0  6.0   7.0   8.0
+    7.0  8.0   8.0   9.0
+    8.0  9.0  10.0  10.0
+];
 TFN_eval_9 = [1.0 1.0 1.5 2.0; 1.0 1.5 2.5 3.0; 2.0 2.5 3.5 4.0; 3.0 3.5 4.5 5.0; 4.0 4.5 5.0 5.5; 5.0 5.5 6.5 7.0; 6.0 6.5 7.5 8.0; 7.0 7.5 8.5 9.0; 8.0 8.5 9.0 9.0];
 
 %% LEITURA E ARMAZENAMENTO DAS AVALIAÇÕES DOS REQUISITOS (INDIVIDUAL)
