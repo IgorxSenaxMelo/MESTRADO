@@ -65,12 +65,7 @@ pref_types = [1, 4, 4, 4, 4];
 scale_max = [7, 7, 7, 7, 7];
 scale_min = [1, 1, 1, 1, 1];
 
-% amplitude das escalas
-A_scale = scale_max - scale_min;
 
-% limiares automáticos
-q_vals = [0, 0.06*A_scale(2), 0.06*A_scale(3), 0.06*A_scale(4), 0.06*A_scale(5)];
-p_vals = [0, 0.21*A_scale(2), 0.21*A_scale(3), 0.21*A_scale(4), 0.21*A_scale(5)];
 
 
 
@@ -105,6 +100,10 @@ TFN_eval_9 = [
     8.0  8.5  9.0  9.0
 ];
 
+% amplitude das escalas
+A_tfn = max(TFN_eval_7(:)) - min(TFN_eval_7(:));   % = 10
+q_vals = [0, 0.06*A_tfn*ones(1,4)];
+p_vals = [0, 0.19*A_tfn*ones(1,4)];
 
 %% ---------------------------------------------------------
 % 2. PESOS FUZZY CALCULADOS AUTOMATICAMENTE VIA FAHP

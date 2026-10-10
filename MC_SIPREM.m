@@ -9,7 +9,7 @@ if ~exist(pasta_figuras, 'dir')
 end
 
 %% CONFIGURAÇÕES
-N_mc = 200; % Elevado para 1000 iterações conforme validação estatística
+N_mc = 2000; % Elevado para 1000 iterações conforme validação estatística
 rng(42);
 
 input_file = 'dados_requisitos_lista.xlsx';
@@ -41,9 +41,8 @@ critDir = [1, -1, 1, -1, -1];
 pref_types = [1, 4, 4, 4, 4];
 scale_max = [7, 7, 7, 7, 7];
 scale_min = [1, 1, 1, 1, 1];
-A_scale = scale_max - scale_min;
-q_base = [0, 0.06*A_scale(2), 0.06*A_scale(3), 0.06*A_scale(4), 0.06*A_scale(5)];
-p_base = [0, 0.21*A_scale(2), 0.21*A_scale(3), 0.21*A_scale(4), 0.21*A_scale(5)];
+
+
 
 % Escalas Trapezoidais fiéis ao seu modelo
 TFN_eval_5 = [1.0 1.0 1.5 2.0; 1.5 2.0 2.0 2.5; 2.0 2.5 3.0 3.5; 3.0 3.5 4.0 4.5; 4.0 4.5 5.0 5.0];
@@ -57,6 +56,13 @@ TFN_eval_7 = [
     8.0  9.0  10.0  10.0
 ];
 TFN_eval_9 = [1.0 1.0 1.5 2.0; 1.0 1.5 2.5 3.0; 2.0 2.5 3.5 4.0; 3.0 3.5 4.5 5.0; 4.0 4.5 5.0 5.5; 5.0 5.5 6.5 7.0; 6.0 6.5 7.5 8.0; 7.0 7.5 8.5 9.0; 8.0 8.5 9.0 9.0];
+
+% amplitude das escalas
+A_tfn = max(TFN_eval_7(:)) - min(TFN_eval_7(:));   % = 10
+q_vals = [0, 0.06*A_tfn*ones(1,4)];
+p_vals = [0, 0.19*A_tfn*ones(1,4)];
+q_base = q_vals;   
+p_base = p_vals;  
 
 %% LEITURA E ARMAZENAMENTO DAS AVALIAÇÕES DOS REQUISITOS (INDIVIDUAL)
 T0 = readtable(input_file, 'Sheet', all_sheets{1}, 'VariableNamingRule', 'preserve');
@@ -740,86 +746,7 @@ legend({'SEM médio','SEM máximo'},...
 
 grid on;
 box on;
-%% =========================================================
-% ROLLING STABILITY - KEY
-% ==========================================================
 
-janela = 20;
-passo  = 10;
-
-inicio = 1:passo:(N_mc-2*janela+1);
-
-rho_key = zeros(length(inicio),1);
-x_roll  = zeros(length(inicio),1);
-
-for k = 1:length(inicio)
-
-    i1 = inicio(k);
-    i2 = i1 + janela - 1;
-
-    j1 = i2 + 1;
-    j2 = j1 + janela - 1;
-
-    % Probabilidade de Key em cada janela
-    pA = mean(cat_mc(:,i1:i2)==1,2);
-    pB = mean(cat_mc(:,j1:j2)==1,2);
-
-    rho_key(k) = corr(pA,pB,'Type','Spearman');
-
-    x_roll(k) = (j1+j2)/2;
-
-end
-
-%% =========================================================
-% ROLLING STABILITY - GRUPO 1
-% ==========================================================
-
-rho_g1 = zeros(length(inicio),1);
-
-for k = 1:length(inicio)
-
-    i1 = inicio(k);
-    i2 = i1 + janela - 1;
-
-    j1 = i2 + 1;
-    j2 = j1 + janela - 1;
-
-    pA = mean(cat_mc(:,i1:i2)==2,2);
-    pB = mean(cat_mc(:,j1:j2)==2,2);
-
-    rho_g1(k) = corr(pA,pB,'Type','Spearman');
-
-end
-
-figure( ...
-    'Color','w', ...
-    'Name','Rolling_Stability_Key_G1', ...
-    'Position',[100 100 1000 600]);
-
-plot(x_roll,rho_key,...
-    '-o',...
-    'LineWidth',2);
-
-hold on;
-
-plot(x_roll,rho_g1,...
-    '-s',...
-    'LineWidth',2);
-
-yline(0.99,'--k');
-
-xlabel('Número de simulações');
-ylabel('Correlação de Spearman');
-
-title('Rolling Stability das probabilidades');
-
-legend({'Key','Grupo 1'},...
-       'Location','southeast');
-
-ylim([0.8 1.01]);
-
-grid on;
-box on;
 %% =========================================================
 % GRÁFICO EXTRA – DISTRIBUIÇÃO DOS PESOS POR ITERAÇÃO
 %% =========================================================
